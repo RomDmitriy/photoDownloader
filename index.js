@@ -14,6 +14,15 @@ function log(recordId, message) {
   console.log(`Record ${recordId}: ${message}`);
 }
 
+function validateUrl(urlString) {
+  try {
+    new URL(urlString);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function run() {
   try {
     // подключаемся к БД
@@ -46,12 +55,17 @@ async function run() {
 
       recordsCollection.forEach((recordCollection) => {
         // если thumbnail у recond'а отсутствует, то пропускаем
-        if (recordCollection.thumbnail?.publicUrl) {
+        if (!recordCollection.thumbnail?.publicUrl) {
           log(recordCollection._id, 'No thumbnail or public link');
           return;
         }
 
+        // проверяем ссылку
         const link = recordCollection.thumbnail.publicUrl;
+        if (!validateUrl(link)) {
+          log(recordCollection._id, `Wrong link format: "${link}"`);
+          return;
+        }
 
         // выбираем нужный протокол
         const request = link.trimStart().startsWith('https') ? https : http;
@@ -65,9 +79,7 @@ async function run() {
           }
 
           // создаём поток вывода в файл
-          const file = fs.createWriteStream(
-            `${output_path}/${recordCollection._id}${path.extname(link)}`
-          );
+          const file = fs.createWriteStream(`${output_path}/${recordCollection._id}${path.extname(link)}`);
 
           // записываем их в файл
           response.pipe(file);
@@ -79,7 +91,10 @@ async function run() {
           });
         });
 
-        // обработчик ошибки когда сайт недоступен
+        // обработчики ошибок
+        req.on('timeout', (_) => {
+          log(recordCollection._id, 'Connection timeout');
+        });
         req.on('error', (_) => {
           log(recordCollection._id, 'Site is unavaliable');
         });
