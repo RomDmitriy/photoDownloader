@@ -6,7 +6,7 @@ const https = require('https');
 
 const uri = 'mongodb://localhost:27021/test?directConnection=true';
 const output_path = './output';
-const max_records = 100;
+const max_records = 500;
 
 const client = new MongoClient(uri);
 
@@ -29,9 +29,7 @@ async function run() {
     await client.connect();
     const db = client.db();
 
-    let count = 0;
-
-    while (true) {
+    for (let count = 0;; count++) {
       // получаем таблицу Record'ов
       const recordsCollection = await db
         .collection('records')
@@ -44,8 +42,6 @@ async function run() {
           }
         )
         .toArray();
-
-      console.log(`Started ${count+1} iteration`);
 
       // если record'ы закончились
       if (!recordsCollection.length) break;
@@ -89,20 +85,15 @@ async function run() {
           file.on('finish', () => {
             file.close();
             log(recordCollection._id, 'Download Complete');
-            return;
           });
         });
 
         // обработчики ошибок
-        req.on('timeout', (_) => {
-          log(recordCollection._id, 'Connection timeout');
-        });
-        req.on('error', (_) => {
+        req.on('error', (err) => {
+          console.error(err);
           log(recordCollection._id, 'Site is unavaliable');
         });
       });
-
-      count++;
     }
   } finally {
     await client.close();
