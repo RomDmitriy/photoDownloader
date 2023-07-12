@@ -10,8 +10,11 @@ const max_records = 100;
 
 const client = new MongoClient(uri);
 
+let current = 0;
+let total = 0;
+
 function log(recordId, message) {
-  console.log(`Record ${recordId}: ${message}`);
+  console.log(`[${current}/${total}]Record ${recordId}: ${message}`);
 }
 
 function validateUrl(urlString) {
@@ -24,8 +27,8 @@ function validateUrl(urlString) {
 }
 
 function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-} 
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
 
 async function run() {
   try {
@@ -33,7 +36,9 @@ async function run() {
     await client.connect();
     const db = client.db();
 
-    for (let count = 0;; count++) {
+    total = await db.collection('records').countDocuments();
+
+    for (let count = 0; ; count++) {
       // получаем таблицу Record'ов
       const recordsCollection = await db
         .collection('records')
@@ -55,8 +60,7 @@ async function run() {
         fs.mkdirSync(output_path);
       }
 
-      for (let i = 0; i < recordsCollection.length; i++) {
-        await delay(50)
+      for (let i = 0; i < recordsCollection.length; i++, current++) {
         // если thumbnail у recond'а отсутствует, то пропускаем
         if (!recordsCollection[i].thumbnail?.publicUrl) {
           log(recordsCollection[i]._id, 'No thumbnail or public link');
@@ -75,6 +79,7 @@ async function run() {
         recordsCollection[i]._id = recordsCollection[i]._id.toString();
 
         // получаем данные
+        await delay(20);
         const req = request.get(link, (response) => {
           if (response.statusCode !== 200) {
             log(recordsCollection[i]._id, 'File is unavaliable');
