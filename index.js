@@ -44,7 +44,7 @@ async function run() {
         .toArray();
 
       // если record'ы закончились
-      if (!recordsCollection.length) break;
+      if (recordsCollection.length === 0) break;
 
       // создаём папку для вывода
       if (!fs.existsSync(output_path)) {
