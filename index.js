@@ -45,6 +45,8 @@ async function run() {
         )
         .toArray();
 
+      console.log(`Started ${count+1} iteration`);
+
       // если record'ы закончились
       if (!recordsCollection.length) break;
 
