@@ -6,6 +6,7 @@ const https = require('https');
 
 const uri = 'mongodb://localhost:27021/test?directConnection=true';
 const output_path = './output';
+const max_records = 100;
 
 const client = new MongoClient(uri);
 
@@ -19,55 +20,71 @@ async function run() {
     await client.connect();
     const db = client.db();
 
-    // получаем таблицу Record'ов
-    const recordsCollection = await db
-      .collection('records')
-      .find({}, { projection: { thumbnail: 1 } })
-      .toArray();
+    let count = 0;
 
-    // создаём папку для вывода
-    if (!fs.existsSync(output_path)) {
-      fs.mkdirSync(output_path);
-    }
+    while (true) {
+      // получаем таблицу Record'ов
+      const recordsCollection = await db
+        .collection('records')
+        .find(
+          {},
+          {
+            projection: { thumbnail: 1 },
+            limit: max_records,
+            skip: max_records * count,
+          }
+        )
+        .toArray();
 
-    recordsCollection.forEach((recordCollection) => {
-      // если thumbnail у recond'а отсутствует, то пропускаем
-      if (recordCollection.thumbnail === null) {
-        log(recordCollection._id, 'No thumbnail');
-        return;
+      // если record'ы закончились
+      if (!recordsCollection.length) break;
+
+      // создаём папку для вывода
+      if (!fs.existsSync(output_path)) {
+        fs.mkdirSync(output_path);
       }
-      
-      // выбираем нужный протокол
-      const request = recordCollection.thumbnail.trimStart().startsWith('https') ? https : http;
-      recordCollection._id = recordCollection._id.toString();
 
-      // получаем данные
-      const req = request.get(recordCollection.thumbnail, (response) => {
-        if (response.statusCode !== 200) {
-          log(recordCollection._id, 'File is unavaliable');
+      recordsCollection.forEach((recordCollection) => {
+        // если thumbnail у recond'а отсутствует, то пропускаем
+        if (recordCollection.thumbnail === null) {
+          log(recordCollection._id, 'No thumbnail');
           return;
         }
 
-        // создаём поток вывода в файл
-        const file = fs.createWriteStream(
-          `${output_path}/${recordCollection._id}${path.extname(recordCollection.thumbnail)}`
-        );
+        // выбираем нужный протокол
+        const request = recordCollection.thumbnail.trimStart().startsWith('https') ? https : http;
+        recordCollection._id = recordCollection._id.toString();
 
-        // записываем их в файл
-        response.pipe(file);
+        // получаем данные
+        const req = request.get(recordCollection.thumbnail, (response) => {
+          if (response.statusCode !== 200) {
+            log(recordCollection._id, 'File is unavaliable');
+            return;
+          }
 
-        file.on('finish', () => {
-          file.close();
-          log(recordCollection._id, 'Download Complete');
-          return;
+          // создаём поток вывода в файл
+          const file = fs.createWriteStream(
+            `${output_path}/${recordCollection._id}${path.extname(recordCollection.thumbnail)}`
+          );
+
+          // записываем их в файл
+          response.pipe(file);
+
+          file.on('finish', () => {
+            file.close();
+            log(recordCollection._id, 'Download Complete');
+            return;
+          });
+        });
+
+        // обработчик ошибки когда сайт недоступен
+        req.on('error', (_) => {
+          log(recordCollection._id, 'Site is unavaliable');
         });
       });
 
-      // обработчик ошибки когда сайт недоступен
-      req.on('error', (_) => {
-        log(recordCollection._id, 'Site is unavaliable');
-      });
-    });
+      count++;
+    }
   } finally {
     await client.close();
   }
