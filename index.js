@@ -34,6 +34,7 @@ async function run() {
       // если thumbnail у recond'а отсутствует, то пропускаем
       if (recordCollection.thumbnail === null) {
         log(recordCollection._id, 'No thumbnail');
+        return;
       }
       
       // выбираем нужный протокол
@@ -64,7 +65,7 @@ async function run() {
 
       // обработчик ошибки когда сайт недоступен
       req.on('error', (_) => {
-        log(recordCollection._id, 'File is unavaliable');
+        log(recordCollection._id, 'Site is unavaliable');
       });
     });
   } finally {
