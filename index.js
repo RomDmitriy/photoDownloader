@@ -79,7 +79,7 @@ async function run() {
         recordsCollection[i]._id = recordsCollection[i]._id.toString();
 
         // получаем данные
-        await delay(20);
+        await delay(30);
         const req = request.get(link, (response) => {
           if (response.statusCode !== 200) {
             log(recordsCollection[i]._id, 'File is unavaliable');
