@@ -32,40 +32,40 @@ async function run() {
 
     recordsCollection.forEach((recordCollection) => {
       // если thumbnail у recond'а отсутствует, то пропускаем
-      if (recordCollection.thumbnail !== null) {
-        // выбираем нужный протокол
-        const request = recordCollection.thumbnail.trimStart().startsWith('https') ? https : http;
-        recordCollection._id = recordCollection._id.toString();
-
-        // получаем данные
-        const req = request.get(recordCollection.thumbnail, (response) => {
-          if (response.statusCode !== 200) {
-            log(recordCollection._id, 'File is unavaliable');
-            return;
-          }
-
-          // создаём поток вывода в файл
-          const file = fs.createWriteStream(
-            `${output_path}/${recordCollection._id}${path.extname(recordCollection.thumbnail)}`
-          );
-
-          // записываем их в файл
-          response.pipe(file);
-
-          file.on('finish', () => {
-            file.close();
-            log(recordCollection._id, 'Download Complete');
-            return;
-          });
-        });
-
-        // обработчик ошибки когда сайт недоступен
-        req.on('error', (_) => {
-          log(recordCollection._id, 'File is unavaliable');
-        });
-      } else {
+      if (recordCollection.thumbnail === null) {
         log(recordCollection._id, 'No thumbnail');
       }
+      
+      // выбираем нужный протокол
+      const request = recordCollection.thumbnail.trimStart().startsWith('https') ? https : http;
+      recordCollection._id = recordCollection._id.toString();
+
+      // получаем данные
+      const req = request.get(recordCollection.thumbnail, (response) => {
+        if (response.statusCode !== 200) {
+          log(recordCollection._id, 'File is unavaliable');
+          return;
+        }
+
+        // создаём поток вывода в файл
+        const file = fs.createWriteStream(
+          `${output_path}/${recordCollection._id}${path.extname(recordCollection.thumbnail)}`
+        );
+
+        // записываем их в файл
+        response.pipe(file);
+
+        file.on('finish', () => {
+          file.close();
+          log(recordCollection._id, 'Download Complete');
+          return;
+        });
+      });
+
+      // обработчик ошибки когда сайт недоступен
+      req.on('error', (_) => {
+        log(recordCollection._id, 'File is unavaliable');
+      });
     });
   } finally {
     await client.close();
