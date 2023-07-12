@@ -6,7 +6,7 @@ const https = require('https');
 
 const uri = 'mongodb://localhost:27021/test?directConnection=true';
 const output_path = './output';
-const max_records = 500;
+const max_records = 100;
 
 const client = new MongoClient(uri);
 
@@ -22,6 +22,10 @@ function validateUrl(urlString) {
     return false;
   }
 }
+
+function delay(time) {
+  return new Promise(resolve => setTimeout(resolve, time));
+} 
 
 async function run() {
   try {
@@ -51,49 +55,50 @@ async function run() {
         fs.mkdirSync(output_path);
       }
 
-      recordsCollection.forEach((recordCollection) => {
+      for (let i = 0; i < recordsCollection.length; i++) {
+        await delay(50)
         // если thumbnail у recond'а отсутствует, то пропускаем
-        if (!recordCollection.thumbnail?.publicUrl) {
-          log(recordCollection._id, 'No thumbnail or public link');
-          return;
+        if (!recordsCollection[i].thumbnail?.publicUrl) {
+          log(recordsCollection[i]._id, 'No thumbnail or public link');
+          continue;
         }
 
         // проверяем ссылку
-        const link = recordCollection.thumbnail.publicUrl;
+        const link = recordsCollection[i].thumbnail.publicUrl;
         if (!validateUrl(link)) {
-          log(recordCollection._id, `Wrong link format: "${link}"`);
-          return;
+          log(recordsCollection[i]._id, `Wrong link format: "${link}"`);
+          continue;
         }
 
         // выбираем нужный протокол
         const request = link.trimStart().startsWith('https') ? https : http;
-        recordCollection._id = recordCollection._id.toString();
+        recordsCollection[i]._id = recordsCollection[i]._id.toString();
 
         // получаем данные
         const req = request.get(link, (response) => {
           if (response.statusCode !== 200) {
-            log(recordCollection._id, 'File is unavaliable');
+            log(recordsCollection[i]._id, 'File is unavaliable');
             return;
           }
 
           // создаём поток вывода в файл
-          const file = fs.createWriteStream(`${output_path}/${recordCollection._id}${path.extname(link)}`);
+          const file = fs.createWriteStream(`${output_path}/${recordsCollection[i]._id}${path.extname(link)}`);
 
           // записываем их в файл
           response.pipe(file);
 
           file.on('finish', () => {
             file.close();
-            log(recordCollection._id, 'Download Complete');
+            log(recordsCollection[i]._id, 'Download Complete');
           });
         });
 
         // обработчики ошибок
         req.on('error', (err) => {
           console.error(err);
-          log(recordCollection._id, 'Site is unavaliable');
+          log(recordsCollection[i]._id, 'Site is unavaliable');
         });
-      });
+      }
     }
   } finally {
     await client.close();
