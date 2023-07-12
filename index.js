@@ -46,17 +46,19 @@ async function run() {
 
       recordsCollection.forEach((recordCollection) => {
         // если thumbnail у recond'а отсутствует, то пропускаем
-        if (recordCollection.thumbnail === null) {
-          log(recordCollection._id, 'No thumbnail');
+        if (recordCollection.thumbnail?.publicUrl) {
+          log(recordCollection._id, 'No thumbnail or public link');
           return;
         }
 
+        const link = recordCollection.thumbnail.publicUrl;
+
         // выбираем нужный протокол
-        const request = recordCollection.thumbnail.trimStart().startsWith('https') ? https : http;
+        const request = link.trimStart().startsWith('https') ? https : http;
         recordCollection._id = recordCollection._id.toString();
 
         // получаем данные
-        const req = request.get(recordCollection.thumbnail, (response) => {
+        const req = request.get(link, (response) => {
           if (response.statusCode !== 200) {
             log(recordCollection._id, 'File is unavaliable');
             return;
@@ -64,7 +66,7 @@ async function run() {
 
           // создаём поток вывода в файл
           const file = fs.createWriteStream(
-            `${output_path}/${recordCollection._id}${path.extname(recordCollection.thumbnail)}`
+            `${output_path}/${recordCollection._id}${path.extname(link)}`
           );
 
           // записываем их в файл
