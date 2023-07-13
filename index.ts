@@ -11,7 +11,7 @@ const uri: string = 'mongodb://localhost:27021/test?directConnection=true';
 const output_path: string = './output';
 const requestMaxRecords: number = 100;
 
-const userIdFilter: string = '';
+const userIdFilter: string = '64afd2a705156c28d5922d4a';
 const folderIdFilter: string = '64afd2a705156c28d5922d4a';
 
 //---------------------------------------------------------------------
