@@ -4,11 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "tsc && node ./dist/index.js"
   },
   "author": "a.ivashkin",
   "license": "ISC",
   "dependencies": {
+    "console-table-printer": "^2.11.2",
     "mongodb": "^5.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
   }
 }
