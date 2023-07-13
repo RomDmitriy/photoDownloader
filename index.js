@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -6,15 +6,22 @@ const https = require('https');
 
 const uri = 'mongodb://localhost:27021/test?directConnection=true';
 const output_path = './output';
-const max_records = 100;
+const requestMaxRecords = 100;
+
+const userIdFilter = '64a80e6874d8c8a21068e103';
+const folderIdFilter = '64afd2a705156c28d5922d4b';
 
 const client = new MongoClient(uri);
 
-let current = 0;
-let total = 0;
+function makeLog(max) {
+  let current = 0;
+  let total = max;
 
-function log(recordId, message) {
-  console.log(`[${current}/${total}]Record ${recordId}: ${message}`);
+  function log(recordId, message) {
+    console.log(`[${++current}/${total}]Record ${recordId}: ${message}`);
+  }
+
+  return log;
 }
 
 function validateUrl(urlString) {
@@ -26,8 +33,19 @@ function validateUrl(urlString) {
   }
 }
 
-function delay(time) {
-  return new Promise((resolve) => setTimeout(resolve, time));
+// фильр выборки из БД
+function createFilter() {
+  const filter = {};
+
+  if (userIdFilter && userIdFilter !== '') {
+    filter.createdBy = new ObjectId(userIdFilter);
+  }
+
+  if (folderIdFilter && folderIdFilter !== '') {
+    filter.folder = folderIdFilter;
+  }
+
+  return filter;
 }
 
 async function run() {
@@ -36,20 +54,19 @@ async function run() {
     await client.connect();
     const db = client.db();
 
-    total = await db.collection('records').countDocuments();
+    const filter = createFilter();
+
+    const log = makeLog(await db.collection('records').countDocuments(filter));
 
     for (let count = 0; ; count++) {
       // получаем таблицу Record'ов
       const recordsCollection = await db
         .collection('records')
-        .find(
-          {},
-          {
-            projection: { thumbnail: 1 },
-            limit: max_records,
-            skip: max_records * count,
-          }
-        )
+        .find(filter, {
+          projection: { thumbnail: 1 },
+          limit: requestMaxRecords,
+          skip: requestMaxRecords * count,
+        })
         .toArray();
 
       // если record'ы закончились
@@ -60,7 +77,7 @@ async function run() {
         fs.mkdirSync(output_path);
       }
 
-      for (let i = 0; i < recordsCollection.length; i++, current++) {
+      for (let i = 0; i < recordsCollection.length; i++) {
         // если thumbnail у recond'а отсутствует, то пропускаем
         if (!recordsCollection[i].thumbnail?.publicUrl) {
           log(recordsCollection[i]._id, 'No thumbnail or public link');
@@ -79,7 +96,7 @@ async function run() {
         recordsCollection[i]._id = recordsCollection[i]._id.toString();
 
         // получаем данные
-        await delay(30);
+        await new Promise((resolve) => setTimeout(resolve, 30));
         const req = request.get(link, (response) => {
           if (response.statusCode !== 200) {
             log(recordsCollection[i]._id, 'File is unavaliable');
