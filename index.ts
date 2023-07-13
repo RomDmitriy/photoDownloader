@@ -31,7 +31,7 @@ class Statistics {
   };
 
   static log() {
-    const result = [
+    printTable([
       {
         category: 'Total records:',
         value: this.total,
@@ -52,8 +52,7 @@ class Statistics {
         category: 'Failed by unavaliable site',
         value: this.failed.byUnavaliableSite,
       },
-    ];
-    printTable(result);
+    ]);
   }
 
   static isComplete() {
