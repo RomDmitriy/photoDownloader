@@ -35,11 +35,11 @@ class Statistics {
       if (Statistics.isComplete()) {
         printTable([
           {
-            category: 'Total records:',
+            category: 'Total records',
             value: this.total,
           },
           {
-            category: 'Success:',
+            category: 'Success',
             value: this.success,
           },
           {
