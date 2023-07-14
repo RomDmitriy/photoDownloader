@@ -31,28 +31,33 @@ class Statistics {
   };
 
   static log() {
-    printTable([
-      {
-        category: 'Total records:',
-        value: this.total,
-      },
-      {
-        category: 'Success:',
-        value: this.success,
-      },
-      {
-        category: 'Failed by wrong URI',
-        value: this.failed.byWrongUri,
-      },
-      {
-        category: 'Failed by unavaliable file',
-        value: this.failed.byUnavaliableFile,
-      },
-      {
-        category: 'Failed by unavaliable site',
-        value: this.failed.byUnavaliableSite,
-      },
-    ]);
+    const interval = setInterval(() => {
+      if (Statistics.isComplete()) {
+        printTable([
+          {
+            category: 'Total records:',
+            value: this.total,
+          },
+          {
+            category: 'Success:',
+            value: this.success,
+          },
+          {
+            category: 'Failed by wrong URI',
+            value: this.failed.byWrongUri,
+          },
+          {
+            category: 'Failed by unavaliable file',
+            value: this.failed.byUnavaliableFile,
+          },
+          {
+            category: 'Failed by unavaliable site',
+            value: this.failed.byUnavaliableSite,
+          },
+        ]);
+        clearInterval(interval);
+      }
+    }, 1000);
   }
 
   static isComplete() {
@@ -179,9 +184,4 @@ async function run(): Promise<void> {
 }
 
 run();
-const interval = setInterval(() => {
-  if (Statistics.isComplete()) {
-    Statistics.log();
-    clearInterval(interval);
-  }
-}, 1000);
+Statistics.log();
