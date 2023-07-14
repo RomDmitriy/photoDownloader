@@ -68,11 +68,6 @@ class Statistics {
   }
 }
 
-interface IFilter {
-  createdBy?: ObjectId;
-  folder?: string;
-}
-
 function log(recordId: ObjectId, message: string) {
   console.log(`[${++Statistics.current}/${Statistics.total}]Record ${recordId}: ${message}`);
 }
@@ -86,7 +81,12 @@ function validateUri(uri: string): boolean {
   }
 }
 
-// фильр выборки из БД
+interface IFilter {
+  createdBy?: ObjectId;
+  folder?: string;
+}
+
+// фильтр выборки из БД
 function createFilter(): IFilter {
   const filter: IFilter = {};
 
