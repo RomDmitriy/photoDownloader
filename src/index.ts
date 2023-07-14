@@ -72,9 +72,9 @@ function log(recordId: ObjectId, message: string) {
   console.log(`[${++Statistics.current}/${Statistics.total}]Record ${recordId}: ${message}`);
 }
 
-function validateUri(uri: string): boolean {
+function validateUrl(url: string): boolean {
   try {
-    new URL(uri);
+    new URL(url);
     return true;
   } catch {
     return false;
@@ -140,7 +140,7 @@ async function run(): Promise<void> {
 
         // проверяем ссылку
         const link: string = recordsCollection[i].thumbnail.publicUrl;
-        if (!validateUri(link)) {
+        if (!validateUrl(link)) {
           Statistics.failed.byWrongUri++;
           log(recordsCollection[i]._id, `Wrong link format: "${link}"`);
           continue;
